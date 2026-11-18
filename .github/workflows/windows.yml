@@ -13,6 +13,10 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
+      - name: Preserve the source line endings used by the Perl generators
+        shell: pwsh
+        run: git config --global core.autocrlf false
+
       - name: Check out the integration harness
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 

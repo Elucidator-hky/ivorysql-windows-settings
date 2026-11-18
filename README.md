@@ -1,0 +1,5 @@
+# IvorySQL and pg_track_settings on Windows
+
+This integration check builds a particular IvorySQL source revision with the Windows UCRT toolchain. It installs the upstream `pg_track_settings` SQL extension, starts a fresh server in each IvorySQL cluster mode and verifies that two configuration changes enter the extension's history. The check requires the server to report its IvorySQL-specific mode. A failed configure, build, installation, startup or assertion remains visible in the run result. [IvorySQL issue 3337](https://github.com/IvorySQL/IvorySQL/issues/3337)
+
+The workflow checks out the database and extension at immutable revisions. The database is distributed under its upstream licenses, and the extension uses the PostgreSQL License. The integration workflow and validation program were prepared using OpenAI Codex. [Database source](https://github.com/IvorySQL/IvorySQL/tree/475ab1956568da0e6e796902bf6e13a916396edd) · [Extension source](https://github.com/rjuju/pg_track_settings/tree/8f1bacbfb9e59ce296a2ce309eb5058238a4fd1d) · [Windows workflow](.github/workflows/windows.yml)

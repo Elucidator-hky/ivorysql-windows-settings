@@ -1,0 +1,76 @@
+name: Windows IvorySQL settings integration
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out the integration harness
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Check out the database source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: IvorySQL/IvorySQL
+          ref: 475ab1956568da0e6e796902bf6e13a916396edd
+          path: ivorysql
+          persist-credentials: false
+
+      - name: Check out the settings extension
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: rjuju/pg_track_settings
+          ref: 8f1bacbfb9e59ce296a2ce309eb5058238a4fd1d
+          path: pg-track-settings
+          persist-credentials: false
+
+      - name: Set up the Windows UCRT build tools
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e
+        with:
+          msystem: UCRT64
+          update: false
+          install: >-
+            bison flex diffutils make perl
+            mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-icu
+            mingw-w64-ucrt-x86_64-libxml2 mingw-w64-ucrt-x86_64-meson
+            mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-pkgconf
+
+      - name: Allow the restricted database process to use its work directory
+        shell: pwsh
+        run: |
+          icacls $env:GITHUB_WORKSPACE /grant "$($env:USERNAME):(OI)(CI)F" /Q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build and install the pinned IvorySQL database
+        shell: msys2 {0}
+        run: |
+          set -eu -o pipefail
+          prefix=$(cygpath -am "$GITHUB_WORKSPACE/install")
+          cd ivorysql
+          meson setup build --prefix="$prefix" --buildtype=release \
+            -Dauto_features=disabled -Dicu=enabled -Dlibxml=enabled -Dnls=disabled
+          meson compile -C build -j 4
+          meson install -C build --no-rebuild
+
+      - name: Verify the running database and extension in both cluster modes
+        shell: msys2 {0}
+        run: bash tests/windows-integration.sh
+
+      - name: Show diagnostics
+        if: always()
+        shell: pwsh
+        run: |
+          foreach ($path in @('db-pg-server.log','db-oracle-server.log','ivorysql/build/meson-logs/meson-log.txt')) {
+            if (Test-Path $path) {
+              Write-Host "--- $path ---"
+              Get-Content $path -Tail 45
+            }
+          }

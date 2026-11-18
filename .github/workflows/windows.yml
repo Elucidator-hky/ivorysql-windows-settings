@@ -56,7 +56,7 @@ jobs:
           prefix=$(cygpath -am "$GITHUB_WORKSPACE/install")
           cd ivorysql
           meson setup build --prefix="$prefix" --buildtype=release \
-            -Dauto_features=disabled -Dicu=enabled -Dlibxml=enabled -Dnls=disabled
+            -Dauto_features=disabled -Dicu=enabled -Dlibxml=enabled -Dnls=disabled -Duuid=none
           meson compile -C build -j 4
           meson install -C build --no-rebuild
 
